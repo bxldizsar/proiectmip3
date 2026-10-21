@@ -1,4 +1,7 @@
 bin/
 obj/
 .vs/
+packages/
+*.db
+log.txt
 *.user

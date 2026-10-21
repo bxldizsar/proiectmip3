@@ -89,6 +89,7 @@ namespace proiectmip3
             return blockedKeywords.Any(k => url.Contains(k.ToLower()));
         }
 
+        //linq:
         private Task<bool> IsBlockedAsync(string url)
         {
             List<string> copy = blockedKeywords.ToList();   // másolat, hogy közben ne változzon
@@ -96,6 +97,8 @@ namespace proiectmip3
 
             return Task.Run(() => copy.Any(k => lowerUrl.Contains(k.ToLower())));
         }
+
+        //cer 5.
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -133,7 +136,7 @@ namespace proiectmip3
                 return;
             }
 
-            // LINQ: verificăm dacă există deja în listă
+            // linq: megnezzuk benne van e a listaban
             List<string> copy = blockedKeywords.ToList();
             bool exists = await Task.Run(() =>
                 copy.Any(k => k.Equals(keyword, StringComparison.OrdinalIgnoreCase)));
@@ -151,17 +154,92 @@ namespace proiectmip3
             Log("Cuvânt cheie adăugat: " + keyword);
         }
 
+        // one handler object for the whole form
+        private SQLiteHandler db = new SQLiteHandler();
+
         private void RefreshCombo()
         {
             cmbKeywords.Items.Clear();
-            foreach (string k in blockedKeywords.OrderBy(k => k))   // LINQ: ordonare alfabetică
+            foreach (string k in blockedKeywords.OrderBy(k => k))   // linq: abc sorrendbe helyezes
                 cmbKeywords.Items.Add(k);
 
             if (cmbKeywords.Items.Count > 0)
                 cmbKeywords.SelectedIndex = 0;
         }
 
-        
+        private void viewKeywordsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!db.IsConnected)
+            {
+                MessageBox.Show("Mai intai conecteaza-te la baza de date!");
+                return;
+            }
+
+            List<string> keywords = db.GetAllKeywords();
+
+            if (keywords.Count == 0)
+            {
+                MessageBox.Show("Nu exista cuvinte cheie in baza de date.");
+                return;
+            }
+
+            // every keyword goes on a new line
+            MessageBox.Show(string.Join("\n", keywords));
+        }
+
+        private void connectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                db.ConnectToDb();
+                Log("Conectat la baza de date");
+                MessageBox.Show("Conectat la baza de date!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Eroare: " + ex.Message);
+            }
+
+        }
+
+        private void disconnectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            db.DisconnectFromDb();
+            Log("Deconectat de la baza de date");
+            MessageBox.Show("Deconectat!");
+        }
+
+        private void addKeywordToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // cant add anything if were not connected
+            if (!db.IsConnected)
+            {
+                MessageBox.Show("Mai intai conecteaza-te la baza de date!");
+                return;
+            }
+
+            KeywordInput kwdForm = new KeywordInput();
+
+            // only save when the user pressed ok
+            if (kwdForm.ShowDialog() == DialogResult.OK)
+            {
+                string kwd = kwdForm.getInputText().Trim().ToLower();
+
+                if (kwd == "")
+                {
+                    MessageBox.Show("Introduceti un cuvant cheie!");
+                    return;
+                }
+
+                db.InsertKeyword(kwd);
+                Log("Cuvant cheie salvat in DB: " + kwd);
+            }
+        }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Web browser blokkolt kulcsszavakkal\nLabor 4 - MIP");
+        }
     }
 
 }
